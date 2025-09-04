@@ -44,7 +44,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/rec
 # Core Parth library source files
 file(GLOB PARTH_CORE_SRCFILES
         "src/Parth/*.cpp"
-        "src/parth_api.cpp"
 )
 
 # Solver source files
@@ -325,10 +324,9 @@ install(TARGETS parth
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-# Install headers
-install(DIRECTORY include/parth
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+# Install public headers
+install(FILES include/parth/parth.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/parth
 )
 
 # Install internal headers needed by the API
