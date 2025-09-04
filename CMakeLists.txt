@@ -41,30 +41,57 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/rec
 # LBC Library
 ################################################################################
 
-# project source files
-file(GLOB SRCFILES
+# Core Parth library source files
+file(GLOB PARTH_CORE_SRCFILES
+        "src/Parth/*.cpp"
+        "src/parth_api.cpp"
+)
+
+# Solver source files
+file(GLOB SOLVER_SRCFILES
         "src/LinSysSolver/*.cpp"
         "src/remesher/*.cpp"
         "src/DemoUtils/*.cpp"
-        "src/ParthRefactor/*.cpp"
         "src/Barb/*.cpp"
         "src/Barb/CustomCholmod/*/*.cpp"
+        "src/utils/*.cpp"
 #        "src/SpMP/*.cpp"
 #        "src/SpMP/synk/*.cpp"
 #        "src/SpMP/reordering/*.cpp"
 )
 
-add_library(${PROJECT_NAME}_lib ${SRCFILES})
+# Create the main Parth library (core functionality)
+add_library(parth ${PARTH_CORE_SRCFILES})
+add_library(Parth::parth ALIAS parth)
+
+# Set target properties for proper library export
+set_target_properties(parth PROPERTIES
+    VERSION 1.0.0
+    SOVERSION 1
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED ON
+    POSITION_INDEPENDENT_CODE ON
+)
+
+target_include_directories(parth PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/Parth/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+# Create the full solver library (includes all components)
+add_library(${PROJECT_NAME}_lib ${SOLVER_SRCFILES} ${PARTH_CORE_SRCFILES})
 
 target_include_directories(${PROJECT_NAME}_lib PUBLIC
         "src/LinSysSolver"
         "src/remesher"
         "src/DemoUtils/include"
-        "src/ParthRefactor/include"
-        "src/ParthRefactor/include"
+        "src/Parth/include"
         "src/Barb/CustomCholmod/Cholmod_Include"
         "src/Barb/CustomCholmod/include"
         "src/Barb"
+        "src/utils/includes"
+        "include"
 #        "src/SpMP"
 #        "src/SpMP/synk"
 #        "src/SpMP/reordering"
@@ -117,7 +144,9 @@ if (${PROJECT_NAME}_WITH_METIS)
         target_link_libraries(${PROJECT_NAME}_lib PUBLIC
                 ${METIS_LIBRARIES}
         )
+        target_link_libraries(parth PUBLIC ${METIS_LIBRARIES})
         target_include_directories(${PROJECT_NAME}_lib PUBLIC "${METIS_INCLUDES}")
+        target_include_directories(parth PUBLIC "${METIS_INCLUDES}")
     else ()
         message(STATUS "The METIS is not found")
     endif ()
@@ -200,6 +229,7 @@ endif ()
 # Find Eigen
 include(eigen)
 target_link_libraries(${PROJECT_NAME}_lib PUBLIC Eigen3::Eigen)
+target_link_libraries(parth PUBLIC Eigen3::Eigen)
 
 
 # libigl
@@ -283,5 +313,59 @@ endif ()
 if (${PROJECT_NAME}_WITH_DEMO)
     add_subdirectory(demo)
 endif ()
+
+# Install targets and configuration
+include(GNUInstallDirs)
+
+# Install the library
+install(TARGETS parth
+    EXPORT parthTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# Install headers
+install(DIRECTORY include/parth
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
+
+# Install internal headers needed by the API
+install(DIRECTORY src/Parth/include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/parth/internal
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
+
+# Generate and install CMake config files
+include(CMakePackageConfigHelpers)
+
+# Generate the config file
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/parthConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/parthConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parth
+)
+
+# Generate the version file
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/parthConfigVersion.cmake"
+    VERSION "1.0.0"
+    COMPATIBILITY AnyNewerVersion
+)
+
+# Install the config files
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/parthConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/parthConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parth
+)
+
+# Install the targets file
+install(EXPORT parthTargets
+    FILE parthTargets.cmake
+    NAMESPACE Parth::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parth
+)
 
 

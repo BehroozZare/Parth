@@ -1,0 +1,17 @@
+@PACKAGE_INIT@
+
+# Parth - Fill-reducing orderings for sparse Cholesky factorization
+
+include(CMakeFindDependencyMacro)
+
+# Find required dependencies
+find_dependency(Eigen3 REQUIRED)
+
+if(@PARTH_SOLVER_WITH_METIS@)
+    find_dependency(METIS REQUIRED)
+endif()
+
+# Include the targets file
+include("${CMAKE_CURRENT_LIST_DIR}/parthTargets.cmake")
+
+check_required_components(parth)
