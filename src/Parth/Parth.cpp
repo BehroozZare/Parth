@@ -72,7 +72,7 @@ void Parth::clearParth() {
   integrator.clearIntegrator();
 }
 
-void Parth::setMeshPointers(int n, int *Mp, int *Mi, std::vector<int> &map) {
+void Parth::setMesh(int n, int *Mp, int *Mi, std::vector<int> &map) {
   assert(Mp != nullptr);
   assert(Mi != nullptr);
   assert(n != 0);
@@ -86,7 +86,7 @@ void Parth::setMeshPointers(int n, int *Mp, int *Mi, std::vector<int> &map) {
   }
 }
 
-void Parth::setMeshPointers(int n, int *Mp, int *Mi) {
+void Parth::setMesh(int n, int *Mp, int *Mi) {
   assert(Mp != nullptr);
   assert(Mi != nullptr);
   assert(n != 0);
@@ -94,6 +94,32 @@ void Parth::setMeshPointers(int n, int *Mp, int *Mi) {
   this->Mi = Mi;
   this->M_n = n;
   this->new_to_old_map.clear();
+}
+
+void Parth::setMatrix(int N, int *Ap, int* Ai, int dim) {
+  assert(Ap != nullptr);
+  assert(Ai != nullptr);
+  assert(N != 0);
+  this->sim_dim = dim;
+
+  //Convert the matrix into mesh and init the pointers
+  this->computeMeshFromMatrix(Ap, Ai, N, dim);
+}
+
+void Parth::setMatrix(int N, int *Ap, int* Ai, std::vector<int> &map, int dim) {
+  assert(Ap != nullptr);
+  assert(Ai != nullptr);
+  assert(N != 0);
+  this->sim_dim = dim;
+
+  //Convert the matrix into mesh and init the pointers
+  this->computeMeshFromMatrix(Ap, Ai, N, dim);
+
+  if (map.empty()) {
+    new_to_old_map.clear();
+  } else {
+    this->setNewToOldDOFMap(map);
+  }
 }
 
 void Parth::setNewToOldDOFMap(std::vector<int> &map) {
@@ -275,6 +301,10 @@ void Parth::mapMeshPermToMatrixPerm(std::vector<int> &mesh_perm,
     assert(invalid_perm == 0);
   }
 #endif
+  if (dim == -1) {
+    dim = sim_dim;
+  }
+
   if (dim == 1) {
     matrix_perm = mesh_perm;
   }
@@ -330,4 +360,61 @@ void Parth::printTiming() {
   std::cout << "+++ PARTH: Overall reuse: " << getReuse() << std::endl;
   std::cout << "+++ PARTH: Timing END +++" << std::endl;
 }
+
+
+void Parth::computeMeshFromMatrix(int* Ap, int* Ai, int N, int dim) {  
+  assert(N % dim == 0);
+  this->Mp_vec.clear();
+  this->Mp_vec.resize(N / dim + 1, 0);
+  std::vector<std::tuple<int, int>> coefficients;
+  for (int c = 0; c < N; c += dim) {
+    assert((Ap[c + 1] - Ap[c]) % dim == 0);
+    for (int r_ptr = Ap[c]; r_ptr < Ap[c + 1]; r_ptr += dim) {
+      int r = Ai[r_ptr];
+      int mesh_c = c / dim;
+      int mesh_r = r / dim;
+      if (mesh_c != mesh_r) {
+        coefficients.emplace_back(mesh_c, mesh_r);
+        coefficients.emplace_back(mesh_r, mesh_c);
+      }
+    }
+  }
+
+  //Remove duplicates
+  std::sort(coefficients.begin(), coefficients.end());
+  coefficients.erase(std::unique(coefficients.begin(), coefficients.end()), coefficients.end());
+
+  for (int i = 0; i < coefficients.size(); i++) {
+    this->Mp_vec[std::get<0>(coefficients[i]) + 1]++;
+  }
+  for (int i = 1; i < this->Mp_vec.size(); i++) {
+    this->Mp_vec[i] += this->Mp_vec[i - 1];
+  }
+
+  this->Mi_vec.resize(this->Mp_vec.back());
+  std::vector<int> Mp_vec_cnt(this->Mp_vec.size(), 0);
+  for (int i = 0; i < coefficients.size(); i++) {
+    int row = std::get<0>(coefficients[i]);
+    int col = std::get<1>(coefficients[i]);
+    this->Mi_vec[this->Mp_vec[row] + Mp_vec_cnt[row]] = col;
+    Mp_vec_cnt[row]++;
+  }
+
+  #ifndef NDEBUG
+  //Make sure that each row is sorted
+  for(int r = 0; r < this->Mp_vec.size(); r++) {
+    for (int i = this->Mp_vec[r]; i < this->Mp_vec[r + 1] - 1; i++) {
+      assert(this->Mi_vec[i] < this->Mi_vec[i + 1]);
+    }
+  }
+  #endif
+
+  int M_n = this->Mp_vec.size() - 1;
+  this->Mp = this->Mp_vec.data();
+  this->Mi = this->Mi_vec.data();
+  this->M_n = M_n;
+  return;
+}
+
+
 } // namespace PARTH

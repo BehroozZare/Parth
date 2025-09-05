@@ -5,7 +5,6 @@
 #ifndef PROJECT_SPARSE_INSPECTOR_H
 #define PROJECT_SPARSE_INSPECTOR_H
 
-#include "Group.h"
 #include "def.h"
 
 namespace sym_lib {

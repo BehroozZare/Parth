@@ -9,6 +9,7 @@
 #include "Integrator.h"
 #include "ParthTypes.h"
 #include <tuple>
+#include <algorithm>
 #include <vector>
 
 namespace PARTH {
@@ -62,6 +63,9 @@ public:
   HMD hmd;
   Integrator integrator;
 
+  std::vector<int> Mp_vec;
+  std::vector<int> Mi_vec;
+
   int *Mp;
   int *Mi;
   int M_n;
@@ -98,16 +102,24 @@ public:
   /// on the user and Parth may change the arrays
   ///--------------------------------------------------------------------------
   void
-  setMeshPointers(int n,                /// [in] Number of rows/columns
+  setMesh(int n,                /// [in] Number of rows/columns
                   int *Mp,              ///<[in] pointer array
                   int *Mi,              ///<[in] index array
                   std::vector<int> &map ///<[in] the new to old dof index map
   );
 
-  void setMeshPointers(int n,   /// [in] Number of rows/columns
+  void setMesh(int n,   /// [in] Number of rows/columns
                        int *Mp, ///<[in] pointer array
                        int *Mi  ///<[in] index array
   );
+
+
+  ///--------------------------------------------------------------------------
+  /// setMatrixPointers - Set the matrix pointers for the Parth algorithm
+  ///--------------------------------------------------------------------------
+  void computeMeshFromMatrix(int* Ap, int* Ai, int N, int dim);
+  void setMatrix(int N, int *Ap, int* Ai, int dim=1);
+  void setMatrix(int N, int *Ap, int* Ai, std::vector<int> &map, int dim=1);
 
   ///--------------------------------------------------------------------------
   /// setDOFsMapper - Set the DOFs mapper where for each dof in the current mesh
@@ -124,7 +136,7 @@ public:
 
   /// mapMeshPermToMatrixPerm - Map the mesh permutation to matrix permutation
   void mapMeshPermToMatrixPerm(std::vector<int> &mesh_perm,
-                               std::vector<int> &matrix_perm, int dim = 3);
+                               std::vector<int> &matrix_perm, int dim = -1);
 
   double getReuse();
   int getNumChanges();
