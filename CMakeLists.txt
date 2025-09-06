@@ -20,7 +20,7 @@ option(${PROJECT_NAME}_WITH_SOLVER_WRAPPER "Add solver wrapper" OFF)
 
 
 #Examples options
-option(${PROJECT_NAME}_WITH_API_DEMO "Add permutation demo" OFF)
+option(${PROJECT_NAME}_WITH_API_DEMO "Add permutation demo" ON)
 option(${PROJECT_NAME}_WITH_CHOLMOD_DEMO "Add cholmod demo" OFF)
 option(${PROJECT_NAME}_WITH_ACCELERATE_DEMO "Add accelerate demo" OFF)
 option(${PROJECT_NAME}_WITH_MKL_DEMO "Add mkl demo" OFF)
@@ -181,7 +181,7 @@ endif ()
 # # examples
 # ################################################################################
 if (${PROJECT_NAME}_WITH_API_DEMO)
-    add_subdirectory(examples/api_demos)
+    add_subdirectory(examples)
 endif ()
 
 if (${PROJECT_NAME}_WITH_CHOLMOD_DEMO)
