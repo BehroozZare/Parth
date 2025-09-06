@@ -3,7 +3,7 @@ set(REQUIRED_CMAKE_VERSION "3.14")
 set(CMAKE_POLICY_DEFAULT_CMP0127 NEW)
 cmake_minimum_required(VERSION ${REQUIRED_CMAKE_VERSION})
 
-project(PARTH_SOLVER DESCRIPTION "A development code base" LANGUAGES CXX)
+project(PARTH DESCRIPTION "A development code base" LANGUAGES CXX)
 
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -I/usr/local/opt/include -L/usr/local/lib")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I/usr/local/opt/include -L/usr/local/lib/c++")
@@ -12,20 +12,22 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 
 
 ################################################################################
+# Test options
+option(${PROJECT_NAME}_WITH_TESTS "Add tests" ON)
 
-#Project options
-option(${PROJECT_NAME}_WITH_SPMP "Use SpMP library with HDAGG" OFF)
-option(${PROJECT_NAME}_WITH_DAGP "Add DAGP for benchmarking" OFF)
-option(${PROJECT_NAME}_WITH_CHOLMOD "Add Cholmod for benchmarking" ON)
-option(${PROJECT_NAME}_WITH_STRUMPACK "Add Strumpack for benchmarking" OFF)
-option(${PROJECT_NAME}_WITH_MKL "Add MKL BLAS" ON)
-option(${PROJECT_NAME}_WITH_ACCELERATE "Add MKL BLAS" ON)
-option(${PROJECT_NAME}_WITH_METIS "Add METIS Ordering" ON)
-option(${PROJECT_NAME}_WITH_OPENGL "Add OPENGL Ordering" ON)
-option(${PROJECT_NAME}_WITH_SYMPILER "Add OPENGL Ordering" OFF)
+#Add solvers wrapper
+option(${PROJECT_NAME}_WITH_SOLVER_WRAPPER "Add solver wrapper" OFF)
 
-option(${PROJECT_NAME}_WITH_PARTH "Add PARTH Ordering" ON)
-option(${PROJECT_NAME}_WITH_DEMO "Add demo executables" ON)
+
+#Examples options
+option(${PROJECT_NAME}_WITH_API_DEMO "Add permutation demo" OFF)
+option(${PROJECT_NAME}_WITH_CHOLMOD_DEMO "Add cholmod demo" OFF)
+option(${PROJECT_NAME}_WITH_ACCELERATE_DEMO "Add accelerate demo" OFF)
+option(${PROJECT_NAME}_WITH_MKL_DEMO "Add mkl demo" OFF)
+option(${PROJECT_NAME}_WITH_IPC_DEMO "Add strumpack demo" OFF)
+option(${PROJECT_NAME}_WITH_REMESHING_DEMO "Add remeshing demo" OFF)
+option(${PROJECT_NAME}_WITH_SOLVER_WRAPPER_DEMO "Add solver wrapper demo" OFF)
+
 
 if (APPLE)
     set(${PROJECT_NAME}_WITH_MKL OFF)
@@ -38,36 +40,35 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/fin
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake/recipes)
 
 ################################################################################
-# LBC Library
+# SRCS Library
 ################################################################################
 
-# project source files
-file(GLOB SRCFILES
-        "src/LinSysSolver/*.cpp"
-        "src/remesher/*.cpp"
-        "src/DemoUtils/*.cpp"
-        "src/ParthRefactor/*.cpp"
-        "src/Barb/*.cpp"
-        "src/Barb/CustomCholmod/*/*.cpp"
-#        "src/SpMP/*.cpp"
-#        "src/SpMP/synk/*.cpp"
-#        "src/SpMP/reordering/*.cpp"
+# Core Parth library source files
+file(GLOB PARTH_CORE_SRCFILES
+        "src/Parth/*.cpp"
 )
 
-add_library(${PROJECT_NAME}_lib ${SRCFILES})
+# Create the main Parth library (core functionality)
+add_library(parth ${PARTH_CORE_SRCFILES})
+add_library(Parth::parth ALIAS parth)
 
-target_include_directories(${PROJECT_NAME}_lib PUBLIC
-        "src/LinSysSolver"
-        "src/remesher"
-        "src/DemoUtils/include"
-        "src/ParthRefactor/include"
-        "src/ParthRefactor/include"
-        "src/Barb/CustomCholmod/Cholmod_Include"
-        "src/Barb/CustomCholmod/include"
-        "src/Barb"
-#        "src/SpMP"
-#        "src/SpMP/synk"
-#        "src/SpMP/reordering"
+# Set target properties for proper library export
+set_target_properties(parth PROPERTIES
+    VERSION 1.0.0
+    SO_VERSION 1
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    POSITION_INDEPENDENT_CODE ON
+)
+
+target_include_directories(parth PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/Parth/include>
+    $<INSTALL_INTERFACE:include>
+)
+
+target_include_directories(parth PUBLIC
+        "src/Parth/include"
 )
 
 ################################################################################
@@ -92,100 +93,48 @@ find_package(FMA)
 
 # Add SSE, AVX, and FMA flags to compiler flags
 string(REPLACE " " ";" SIMD_FLAGS "${SSE_FLAGS} ${AVX_FLAGS} ${FMA_FLAGS}")
-target_compile_options(${PROJECT_NAME}_lib PUBLIC ${SIMD_FLAGS})
+target_compile_options(parth PUBLIC ${SIMD_FLAGS})
 
 # Add -pthread to compilation and linking
 find_package(Threads)
-target_link_libraries(${PROJECT_NAME}_lib PUBLIC ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(parth PUBLIC ${CMAKE_THREAD_LIBS_INIT})
 
 # Use C++11
-target_compile_features(${PROJECT_NAME}_lib PUBLIC cxx_std_17)
+target_compile_features(parth PUBLIC cxx_std_17)
 
 ################################################################################
 # Required Libraries
 ################################################################################
+# Find Metis
+find_package(METIS REQUIRED)
+if (EXISTS "${METIS_INCLUDES}")
+    target_link_libraries(parth PUBLIC
+            ${METIS_LIBRARIES}
+    )
+    target_link_libraries(parth PUBLIC ${METIS_LIBRARIES})
+    target_include_directories(parth PUBLIC "${METIS_INCLUDES}")
+else ()
+    message(STATUS "The METIS is not found")
+endif ()
 
-# CLI11
-include(cli11)
-target_link_libraries(${PROJECT_NAME}_lib PUBLIC CLI11::CLI11)
+# Find SuiteSparse
+set(SUITESPARSE_INCLUDE_DIR_HINTS $ENV{SUITESPARSE_INC})
+set(SUITESPARSE_LIBRARY_DIR_HINTS $ENV{SUITESPARSE_LIB})
+find_package(SuiteSparse REQUIRED)
+target_link_libraries(parth PUBLIC ${SUITESPARSE_LIBRARIES})
+target_include_directories(parth PUBLIC ${SUITESPARSE_INCLUDE_DIRS})
 
-### Find Metis
-
-if (${PROJECT_NAME}_WITH_METIS)
-    find_package(METIS REQUIRED)
-    if (EXISTS "${METIS_INCLUDES}")
-        target_link_libraries(${PROJECT_NAME}_lib PUBLIC
-                ${METIS_LIBRARIES}
-        )
-        target_include_directories(${PROJECT_NAME}_lib PUBLIC "${METIS_INCLUDES}")
+# Find Accelerate Framework
+if (APPLE)
+    find_library(ACCELERATE_FRAMEWORK Accelerate)
+    if (ACCELERATE_FRAMEWORK)
+        message(STATUS "Accelerate Framework found: ${ACCELERATE_FRAMEWORK}")
+        target_link_libraries(parth PUBLIC ${ACCELERATE_FRAMEWORK})
+        target_compile_definitions(parth PUBLIC PARTH_WITH_ACCELERATE)
     else ()
-        message(STATUS "The METIS is not found")
+        message(FATAL_ERROR "Accelerate Framework not found")
     endif ()
 endif ()
-
-### Find Intel MKL if available
-if (${PROJECT_NAME}_WITH_MKL)
-    find_package(MKL OPTIONAL_COMPONENTS)
-    if (EXISTS "${MKL_INCLUDE_DIRS}")
-        message(STATUS "The MKL has been found")
-        target_include_directories(${PROJECT_NAME}_lib PUBLIC "${MKL_INCLUDE_DIRS}")
-        target_link_libraries(${PROJECT_NAME}_lib PUBLIC ${MKL_LIBRARIES})
-        target_compile_definitions(${PROJECT_NAME}_lib PUBLIC PARTH_WITH_MKL)
-    else ()
-        message(STATUS "Intel MKL not found.")
-        set(MKL_LIBRARIES "")
-        set(MKL 0)
-    endif ()
-
-endif ()
-
-
-### Check whether DAGP root exists - Relative works
-if (${PROJECT_NAME}_WITH_DAGP)
-    if (EXISTS "$ENV{DAGPROOT}")
-        message(STATUS "The DAGP is found - $ENV{DAGPROOT}.")
-        target_include_directories(${PROJECT_NAME}_lib PUBLIC
-                "$ENV{DAGPROOT}/src/recBisection/"
-                "$ENV{DAGPROOT}/src/common/"
-                "src/utils/external/DAGPInterface/includes"
-        )
-        target_link_libraries(${PROJECT_NAME}_lib PUBLIC
-                "$ENV{DAGPROOT}/lib/libdagp.a"
-                "src/utils/external/DAGPInterface/*.cpp"
-        )
-        add_definitions(-DDAGP)
-    else ()
-        message(STATUS "Please defined the DAGP directory using DAGP_ROOT variable")
-    endif ()
-endif ()
-
-### Check whether SPMP root exists - Relative works
-if (${PROJECT_NAME}_WITH_SPMP)
-    if (EXISTS "$ENV{SPMPROOT}")
-        message(STATUS "Found SpMP - $ENV{SPMPROOT}.")
-        target_include_directories(${PROJECT_NAME}_lib PUBLIC
-                $ENV{SPMPROOT}
-                "src/utils/external/SpMPInterface/includes"
-        )
-        target_link_libraries(${PROJECT_NAME}_lib PUBLIC
-                "$ENV{SPMPROOT}/libspmp.a"
-        )
-        add_definitions(-DSPMP)
-    else ()
-        message(STATUS "Please defined the SpMP directory using SPMPROOT variable - not found")
-    endif ()
-endif ()
-
-# SuiteSparse
-if (${PROJECT_NAME}_WITH_CHOLMOD)
-    set(SUITESPARSE_INCLUDE_DIR_HINTS $ENV{SUITESPARSE_INC})
-    set(SUITESPARSE_LIBRARY_DIR_HINTS $ENV{SUITESPARSE_LIB})
-    find_package(SuiteSparse REQUIRED)
-    target_link_libraries(${PROJECT_NAME}_lib PUBLIC ${SUITESPARSE_LIBRARIES})
-    target_include_directories(${PROJECT_NAME}_lib PUBLIC ${SUITESPARSE_INCLUDE_DIRS})
-    target_compile_definitions(${PROJECT_NAME}_lib PUBLIC PARTH_WITH_CHOLMOD)
-endif ()
-
 
 #Strumpack
 if (${PROJECT_NAME}_WITH_STRUMPACK)
@@ -193,55 +142,11 @@ if (${PROJECT_NAME}_WITH_STRUMPACK)
 
     set(STRUMPACK_DIR "$ENV{STRUMPACKROOT}/lib/cmake/STRUMPACK/")
     find_package(STRUMPACK REQUIRED)
-    target_include_directories(${PROJECT_NAME}_lib PUBLIC "$ENV{STRUMPACKROOT}/include")
-    target_link_libraries(${PROJECT_NAME}_lib PRIVATE STRUMPACK::strumpack)
+    target_link_libraries(parth PRIVATE STRUMPACK::strumpack)
 endif ()
 
-# Find Eigen
-include(eigen)
-target_link_libraries(${PROJECT_NAME}_lib PUBLIC Eigen3::Eigen)
-
-
-# libigl
-include(libigl)
-# Other modules you could enable
-igl_include(embree)
-igl_include(imgui)
-#igl_include(opengl)
-#igl_include(stb)
-#igl_include(predicates)
-#igl_include(xml)
-#igl_include(copyleft cgal)
-#igl_include(copyleft comiso)
-igl_include(copyleft core)
-#igl_include(copyleft cork)
-igl_include(copyleft tetgen)
-#igl_include(restricted matlab)
-#igl_include(restricted mosek)
-igl_include(restricted triangle)
-
-
-target_link_libraries(${PROJECT_NAME}_lib PUBLIC igl_copyleft::core igl_restricted::triangle igl_copyleft::tetgen)
-if (${PROJECT_NAME}_WITH_OPENGL)
-    igl_include(glfw)
-    target_link_libraries(${PROJECT_NAME}_lib PUBLIC igl::glfw igl::imgui igl::embree)
-    target_compile_definitions(${PROJECT_NAME}_lib PUBLIC USE_OPENGL)
-endif ()
-
-# Find Accelerate Framework
-if (APPLE)
-    find_library(ACCELERATE_FRAMEWORK Accelerate)
-    if (ACCELERATE_FRAMEWORK)
-        message(STATUS "Accelerate Framework found: ${ACCELERATE_FRAMEWORK}")
-        target_link_libraries(${PROJECT_NAME}_lib PUBLIC ${ACCELERATE_FRAMEWORK})
-        target_compile_definitions(${PROJECT_NAME}_lib PUBLIC PARTH_WITH_ACCELERATE)
-    else ()
-        message(FATAL_ERROR "Accelerate Framework not found")
-    endif ()
-endif ()
 
 find_package(OpenMP)
-
 if (OPENMP_FOUND)
     #include_directories("${OPENMP_INCLUDES}")
     #include_directories("/usr/local/include" "/usr/local/opt/llvm/include")
@@ -254,34 +159,106 @@ if (OPENMP_FOUND)
 endif ()
 
 if (APPLE)
-    set(OMP_BREW /usr/local/Cellar/libomp/18.1.4/)
-    target_include_directories(${PROJECT_NAME}_lib PUBLIC ${OMP_BREW}/include)
+    set(OMP_BREW /opt/homebrew/Cellar/libomp/21.1.0/)
+    target_include_directories(parth PUBLIC ${OMP_BREW}/include)
     find_library(OMP NAMES omp HINTS ${OMP_BREW}/lib)
     if (OMP)
         message(STATUS "Found omp: ${OMP}")
     else ()
         message(FATAL_ERROR "omp library not found")
     endif ()
-    target_link_libraries(${PROJECT_NAME}_lib PUBLIC ${OMP})
+    target_link_libraries(parth PUBLIC ${OMP})
 endif ()
 
-if (${PROJECT_NAME}_WITH_SYMPILER)
-    message(STATUS "ADDING SYMPILER")
-    include(sympiler)
-
-    target_link_libraries(${PROJECT_NAME}_lib PUBLIC SympilerEigen::SympilerEigen)
-    # TODO: make it only one header
-    message(STATUS "THE SYMPILER INCLUDE DIR IS")
-    message(STATUS ${SYMPILER_INCLUDE_DIRS})
-    target_include_directories(${PROJECT_NAME}_lib PUBLIC ${SYMPILER_INCLUDE_DIRS}
-    )
-    target_compile_definitions(${PROJECT_NAME}_lib PUBLIC PARTH_WITH_SYMPILER)
+# ################################################################################
+# # tests
+# ################################################################################
+if (${PROJECT_NAME}_WITH_TESTS)
+    add_subdirectory(tests)
 endif ()
 
-
-# Develop folder
-if (${PROJECT_NAME}_WITH_DEMO)
-    add_subdirectory(demo)
+# ################################################################################
+# # examples
+# ################################################################################
+if (${PROJECT_NAME}_WITH_API_DEMO)
+    add_subdirectory(examples/api_demos)
 endif ()
+
+if (${PROJECT_NAME}_WITH_CHOLMOD_DEMO)
+    add_subdirectory(examples/api_demos/cholmod_computation)
+endif ()
+
+if (${PROJECT_NAME}_WITH_ACCELERATE_DEMO)
+    add_subdirectory(examples/api_demos/accelerate_computation)
+endif ()
+
+if (${PROJECT_NAME}_WITH_MKL_DEMO)
+    add_subdirectory(examples/api_demos/mkl_computation)
+endif ()
+
+if (${PROJECT_NAME}_WITH_IPC_DEMO)
+    add_subdirectory(examples/api_demos/ipc_computation)
+endif ()
+
+if (${PROJECT_NAME}_WITH_REMESHING_DEMO)
+    add_subdirectory(examples/api_demos/remeshing_computation)
+endif ()
+
+# ################################################################################
+# # Install targets and configuration
+# ################################################################################
+
+# # Install targets and configuration
+# include(GNUInstallDirs)
+
+# # Install the library
+# install(TARGETS parth
+#     EXPORT parthTargets
+#     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+# )
+
+# # Install public headers
+# install(FILES include/parth/parth.h
+#     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/parth
+# )
+
+# # Install internal headers needed by the API
+# install(DIRECTORY src/Parth/include/
+#     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/parth/internal
+#     FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+# )
+
+# # Generate and install CMake config files
+# include(CMakePackageConfigHelpers)
+
+# # Generate the config file
+# configure_package_config_file(
+#     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/parthConfig.cmake.in"
+#     "${CMAKE_CURRENT_BINARY_DIR}/parthConfig.cmake"
+#     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parth
+# )
+
+# # Generate the version file
+# write_basic_package_version_file(
+#     "${CMAKE_CURRENT_BINARY_DIR}/parthConfigVersion.cmake"
+#     VERSION "1.0.0"
+#     COMPATIBILITY AnyNewerVersion
+# )
+
+# # Install the config files
+# install(FILES
+#     "${CMAKE_CURRENT_BINARY_DIR}/parthConfig.cmake"
+#     "${CMAKE_CURRENT_BINARY_DIR}/parthConfigVersion.cmake"
+#     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parth
+# )
+
+# # Install the targets file
+# install(EXPORT parthTargets
+#     FILE parthTargets.cmake
+#     NAMESPACE Parth::
+#     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/parth
+# )
 
 

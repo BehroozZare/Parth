@@ -1,0 +1,52 @@
+@PACKAGE_INIT@
+
+# Parth - Fill-reducing orderings for sparse Cholesky factorization
+
+include(CMakeFindDependencyMacro)
+
+# Find required dependencies
+find_dependency(Eigen3 REQUIRED)
+
+# Find METIS if it was used during build
+if(@PARTH_SOLVER_WITH_METIS@)
+    find_dependency(METIS REQUIRED)
+endif()
+
+# Find MKL if it was used during build
+if(@PARTH_SOLVER_WITH_MKL@)
+    find_dependency(MKL)
+endif()
+
+# Find SuiteSparse/CHOLMOD if it was used during build
+if(@PARTH_SOLVER_WITH_CHOLMOD@)
+    find_dependency(SuiteSparse)
+endif()
+
+# On macOS, find Accelerate if it was used
+if(@PARTH_SOLVER_WITH_ACCELERATE@)
+    if(APPLE)
+        find_library(ACCELERATE_FRAMEWORK Accelerate REQUIRED)
+    endif()
+endif()
+
+# Include the targets file
+include("${CMAKE_CURRENT_LIST_DIR}/parthTargets.cmake")
+
+# Verify all components are available
+check_required_components(parth)
+
+# Provide information about the configuration
+if(NOT parth_FIND_QUIETLY)
+    message(STATUS "Found Parth library")
+    message(STATUS "  Version: 1.0.0")
+    message(STATUS "  Include directories: ${_IMPORT_PREFIX}/@CMAKE_INSTALL_INCLUDEDIR@/parth")
+    if(@PARTH_SOLVER_WITH_MKL@)
+        message(STATUS "  Built with MKL support")
+    endif()
+    if(@PARTH_SOLVER_WITH_CHOLMOD@)
+        message(STATUS "  Built with CHOLMOD support")
+    endif()
+    if(@PARTH_SOLVER_WITH_ACCELERATE@)
+        message(STATUS "  Built with Accelerate support")
+    endif()
+endif()

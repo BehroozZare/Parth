@@ -1,14 +1,142 @@
-# ParthSolverDev
+# Parth: Fill-Reducing Orderings for Sparse Cholesky Factorization
 
-Parth is a framework that provides fill-reducing orderings, which can be used with state-of-the-art Cholesky solvers such as MKL, Accelerate, and CHOLMOD. The goal of Parth is to improve the efficiency of sparse matrix factorizations by minimizing fill-in during the Cholesky decomposition process, making it suitable for high-performance scientific and engineering applications.
+Parth is a C++ library that provides fill-reducing orderings for sparse Cholesky factorizations. It can be used with state-of-the-art solvers such as MKL, Accelerate, and CHOLMOD to improve the efficiency of sparse matrix factorizations by minimizing fill-in during the decomposition process.
+
+## Key Features
+
+- **Fill-reducing orderings**: Minimize fill-in during Cholesky factorization
+- **Dynamic mesh support**: Efficiently handle changing mesh topologies with factor reuse
+- **Multiple backends**: Works with METIS, AMD, and other ordering algorithms
+- **Modern C++ API**: Clean, easy-to-use interface
+- **CMake integration**: Easy integration into existing projects
+- **Cross-platform**: Supports Linux, macOS, and Windows
+
+## Quick Start
+
+### Installation
+
+#### Option 1: Using CMake FetchContent (Recommended)
+
+Add this to your `CMakeLists.txt`:
+
+```cmake
+include(FetchContent)
+
+FetchContent_Declare(
+    parth
+    GIT_REPOSITORY https://github.com/BehroozZare/parth.git
+    GIT_TAG        main
+)
+
+FetchContent_MakeAvailable(parth)
+
+# Link with your target
+target_link_libraries(your_target PRIVATE Parth::parth)
+```
+
+#### Option 2: Manual Build and Install
+
+```bash
+git clone https://github.com/BehroozZare/parth.git
+cd parth
+mkdir build && cd build
+cmake ..
+make -j
+sudo make install
+```
+
+Then in your project:
+```cmake
+find_package(parth REQUIRED)
+target_link_libraries(your_target PRIVATE Parth::parth)
+```
+
+### Basic Usage
+
+```cpp
+#include <parth/parth.h>
+
+// Create Parth instance
+PARTH::Parth parth;
+parth.setReorderingType(PARTH::ReorderingType::METIS);
+
+// Set your mesh connectivity (CSR format)
+parth.setMeshPointers(n, Mp, Mi);
+
+// Compute permutation
+std::vector<int> perm;
+parth.computePermutation(perm, 3); // 3 DOFs per node for 3D problems
+
+// Use permutation with your favorite sparse solver...
+```
+
+### API Examples
+
+Check out the [examples/api_demos/](examples/api_demos/) directory for complete examples:
+
+- **basic_permutation_demo.cpp**: Shows basic permutation computation
+- **dynamic_mesh_demo.cpp**: Demonstrates factor reuse with changing meshes
+- **external_project_example/**: Complete example of using Parth in an external project
+
+## API Reference
+
+### Core Class: `PARTH::Parth`
+
+#### Configuration
+- `setReorderingType(ReorderingType)`: Set ordering algorithm (METIS, AMD, AUTO)
+- `setVerbose(bool)`: Enable/disable verbose output
+- `setNDLevels(int)`: Set nested dissection levels
+- `setNumberOfCores(int)`: Set number of cores for parallel processing
+
+#### Mesh Input
+- `setMeshPointers(n, Mp, Mi)`: Set mesh connectivity in CSR format
+- `setMeshPointers(n, Mp, Mi, map)`: Set mesh with DOF mapping for dynamic meshes
+- `setNewToOldDOFMap(map)`: Set mapping for factor reuse
+
+#### Permutation Computation
+- `computePermutation(perm, dim)`: Compute fill-reducing permutation
+- `mapMeshPermToMatrixPerm(mesh_perm, matrix_perm, dim)`: Map to matrix DOFs
+
+#### Analysis
+- `getReuse()`: Get factor reuse percentage
+- `getNumChanges()`: Get number of topology changes
+- `printTiming()`: Print detailed timing information
 
 ---
 
-**Note:** This project is currently under construction. The codebase and documentation are my raw versions, originally created for the Parth paper. Over the coming month, I will actively improve the documentation and clean up the codebase to make it easier to use.
+## Dependencies
 
----
+### Required
+- **CMake** 3.14 or newer
+- **C++17** compatible compiler
+- **Eigen3** (automatically downloaded if not found)
 
-## Benchmark
+### Optional
+- **METIS** (for METIS ordering, automatically detected)
+- **Intel MKL** (for high-performance solvers)
+- **CHOLMOD** (for CHOLMOD solver backend)
+- **OpenMP** (for parallel processing)
+
+### Build Options
+
+Configure the build with these CMake options:
+
+```bash
+cmake -DPARTH_SOLVER_WITH_METIS=ON \
+      -DPARTH_SOLVER_WITH_MKL=ON \
+      -DPARTH_SOLVER_WITH_CHOLMOD=ON \
+      -DPARTH_SOLVER_WITH_DEMO=ON \
+      ..
+```
+
+## Performance Tips
+
+1. **Enable METIS**: Provides the best ordering quality for most problems
+2. **Set appropriate ND levels**: Typically 4-8 levels work well
+3. **Use factor reuse**: For dynamic meshes, provide DOF mapping to reuse previous factorizations
+4. **Match problem dimension**: Set the correct DOF count per node (1 for scalar, 3 for 3D, etc.)
+
+## Research and Benchmarks
 
 ### IPC Benchmark
 
