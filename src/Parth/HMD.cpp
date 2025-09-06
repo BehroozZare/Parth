@@ -210,7 +210,7 @@ bool HMD::Decompose(
 
 //NOTE: you SHOULD comment these pragmas if you want to re-generate the Parth results for the paper
 //In the paper, the results were NOT for parallel execution of decomposition and ordering
-// start the wavefront parallelism 
+// start the wavefront parallelism
 #pragma omp parallel
   {
     for (int l = 0; l < wavefront_levels; l++) {
@@ -255,6 +255,7 @@ bool HMD::Decompose(
         idx_t nVertices = M_n;
         idx_t csp;
         std::vector<int> vweight(nVertices, 1);
+
         int ret = METIS_ComputeVertexSeparator(&nVertices, Mp, Mi,
                                                vweight.data(), NULL, &csp,
                                                local_nodes_regions.data());
