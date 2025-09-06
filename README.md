@@ -180,14 +180,12 @@ If you use Parth in your research or build upon this work, please cite:
 ```bibtex
 @article{zarebavani2025adaptive,
   title={Adaptive Algebraic Reuse of Reordering in Cholesky Factorizations with Dynamic Sparsity Patterns},
-  author={Zarebavani, Behrooz and Kaufman, Danny M. and Levin, David I.W. and Dehnavi, Maryam Mehri},
-  journal={ACM Transactions on Graphics},
+  author={Zarebavani, Behrooz and M. Kaufman, Danny and IW Levin, David and Mehri Dehnavi, Maryam},
+  journal={ACM Transactions on Graphics (TOG)},
   volume={44},
   number={4},
   pages={1--17},
   year={2025},
-  publisher={ACM},
-  doi={10.1145/3687940},
-  url={https://arxiv.org/pdf/2501.04011}
+  publisher={ACM New York, NY, USA}
 }
 ```
