@@ -138,7 +138,7 @@ dmypy.json
 *.slo
 *.lo
 *.o
-# *.obj
+*.obj
 
 # Precompiled Headers
 *.gch
@@ -254,4 +254,4 @@ input/oldTetMeshes
 input/
 output/
 data/
-*.mtx
+# *.mtx
