@@ -67,7 +67,7 @@ namespace PARTH
 
             void setInitFlag() { this->assigned_nodes_is_defined = true; }
 
-            void setPermutedNewLabel(std::vector<int>& region_perm, double time)
+            void setPermutedNewLabel(std::vector<int>& region_perm)
             {
                 assert(this->identifier_is_defined);
                 permuted_new_label.resize(region_perm.size());
@@ -76,7 +76,6 @@ namespace PARTH
                     permuted_new_label[region_perm[j]] = j;
                 }
                 this->permuted_new_label_is_defined = true;
-                this->permute_time = time;
             }
 
             bool isLeaf() const
