@@ -191,7 +191,3 @@ If you use Parth in your research or build upon this work, please cite:
   url={https://arxiv.org/pdf/2501.04011}
 }
 ```
-
-**Plain text citation:**
-
-Behrooz Zarebavani, Danny M. Kaufman, David I.W. Levin, and Maryam Mehri Dehnavi. 2025. Adaptive Algebraic Reuse of Reordering in Cholesky Factorizations with Dynamic Sparsity Patterns. *ACM Transactions on Graphics* 44, 4 (August 2025), Article 123, 17 pages. https://doi.org/10.1145/3687940
