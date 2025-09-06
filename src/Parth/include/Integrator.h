@@ -138,7 +138,7 @@ public:
   /// problematicEdgeCondition: return 0 for non problematic edge, 1 for within
   /// region edge, 2 for across separator edge\n
   ///--------------------------------------------------------------------------
-  int problematicEdgeCondition(HMD &hmd, int first_node, int second_node);
+  bool problematicEdgeCondition(HMD &hmd, int first_node, int second_node);
 
 
   std::vector<int> getDirtyNodes(HMD &hmd);

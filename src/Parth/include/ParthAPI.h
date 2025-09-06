@@ -13,13 +13,13 @@
 #include <vector>
 
 namespace PARTH {
-class Parth {
+class ParthAPI {
 public:
   //============================ OPTIONS =================================
   ReorderingType reorder_type;
   int num_cores = 10;
   bool verbose = true;
-  bool activate_aggressive_reuse = true;
+  bool activate_aggressive_reuse = false;
   bool lagging = true;
   int ND_levels = 0;
   int sim_dim = 1;
@@ -91,8 +91,8 @@ public:
   double init_time = 0.0;
 
   //============================ FUNCTIONS =================================
-  Parth();
-  ~Parth();
+  ParthAPI();
+  ~ParthAPI();
 
   void clearParth();
 

@@ -2,48 +2,49 @@
 // Created by behrooz zare on 2024-04-07.
 //
 
-#include "Parth.h"
+#include "ParthAPI.h"
 #include "omp.h"
 #include <iostream>
+#include <algorithm>
 
 namespace PARTH {
 
 //======================== Options Functions ========================
-void Parth::setReorderingType(PARTH::ReorderingType type) {
+void ParthAPI::setReorderingType(PARTH::ReorderingType type) {
   this->reorder_type = type;
   hmd.reorder_type = reorder_type;
 }
 
-PARTH::ReorderingType Parth::getReorderingType() const { return reorder_type; }
+PARTH::ReorderingType ParthAPI::getReorderingType() const { return reorder_type; }
 
-void Parth::setVerbose(bool verbose) { this->verbose = verbose; }
+void ParthAPI::setVerbose(bool verbose) { this->verbose = verbose; }
 
-bool Parth::getVerbose() const { return verbose; }
+bool ParthAPI::getVerbose() const { return verbose; }
 
-void Parth::setNDLevels(int num) {
+void ParthAPI::setNDLevels(int num) {
   this->ND_levels = num;
   hmd.num_levels = ND_levels;
 }
 
-int Parth::getNDLevels() const { return this->ND_levels; }
+int ParthAPI::getNDLevels() const { return this->ND_levels; }
 
 ///--------------------------------------------------------------------------
 /// setNumberOfCores - Set the number of cores for region parallelism
 ///--------------------------------------------------------------------------
-void Parth::setNumberOfCores(int num_cores) { this->num_cores = num_cores; }
+void ParthAPI::setNumberOfCores(int num_cores) { this->num_cores = num_cores; }
 
-int Parth::getNumberOfCores() const { return this->num_cores; }
+int ParthAPI::getNumberOfCores() const { return this->num_cores; }
 
 ///--------------------------------------------------------------------------
 /// setNumSubMesh - Set the number of nested dissection levels for HMD
 ///--------------------------------------------------------------------------
-void Parth::setRelocatedLevel(int lvl) { integrator.relocate_lvl = lvl; }
-int Parth::getRelocatedLevel() const { return integrator.relocate_lvl; }
+void ParthAPI::setRelocatedLevel(int lvl) { integrator.relocate_lvl = lvl; }
+int ParthAPI::getRelocatedLevel() const { return integrator.relocate_lvl; }
 
-void Parth::setLagLevel(int lvl) { integrator.lag_lvl = lvl; }
-int Parth::getLagLevel() const { return integrator.lag_lvl; }
+void ParthAPI::setLagLevel(int lvl) { integrator.lag_lvl = lvl; }
+int ParthAPI::getLagLevel() const { return integrator.lag_lvl; }
 
-Parth::Parth() {
+ParthAPI::ParthAPI() {
   // SET DEFAULT OPTIONS
   setReorderingType(ReorderingType::METIS);
   setVerbose(true);
@@ -56,9 +57,9 @@ Parth::Parth() {
   M_n_prev = 0;
 }
 
-Parth::~Parth() {}
+ParthAPI::~ParthAPI() {}
 
-void Parth::clearParth() {
+void ParthAPI::clearParth() {
   Mp = nullptr;
   Mi = nullptr;
   M_n = 0;
@@ -72,7 +73,7 @@ void Parth::clearParth() {
   integrator.clearIntegrator();
 }
 
-void Parth::setMesh(int n, int *Mp, int *Mi, std::vector<int> &map) {
+void ParthAPI::setMesh(int n, int *Mp, int *Mi, std::vector<int> &map) {
   assert(Mp != nullptr);
   assert(Mi != nullptr);
   assert(n != 0);
@@ -86,7 +87,7 @@ void Parth::setMesh(int n, int *Mp, int *Mi, std::vector<int> &map) {
   }
 }
 
-void Parth::setMesh(int n, int *Mp, int *Mi) {
+void ParthAPI::setMesh(int n, int *Mp, int *Mi) {
   assert(Mp != nullptr);
   assert(Mi != nullptr);
   assert(n != 0);
@@ -96,7 +97,7 @@ void Parth::setMesh(int n, int *Mp, int *Mi) {
   this->new_to_old_map.clear();
 }
 
-void Parth::setMatrix(int N, int *Ap, int* Ai, int dim) {
+void ParthAPI::setMatrix(int N, int *Ap, int* Ai, int dim) {
   assert(Ap != nullptr);
   assert(Ai != nullptr);
   assert(N != 0);
@@ -106,7 +107,7 @@ void Parth::setMatrix(int N, int *Ap, int* Ai, int dim) {
   this->computeMeshFromMatrix(Ap, Ai, N, dim);
 }
 
-void Parth::setMatrix(int N, int *Ap, int* Ai, std::vector<int> &map, int dim) {
+void ParthAPI::setMatrix(int N, int *Ap, int* Ai, std::vector<int> &map, int dim) {
   assert(Ap != nullptr);
   assert(Ai != nullptr);
   assert(N != 0);
@@ -122,12 +123,12 @@ void Parth::setMatrix(int N, int *Ap, int* Ai, std::vector<int> &map, int dim) {
   }
 }
 
-void Parth::setNewToOldDOFMap(std::vector<int> &map) {
+void ParthAPI::setNewToOldDOFMap(std::vector<int> &map) {
   this->new_to_old_map = map;
   this->computeOldToNewDOFMap();
 }
 
-void Parth::computeOldToNewDOFMap() {
+void ParthAPI::computeOldToNewDOFMap() {
   added_dofs.clear();
   old_to_new_map.clear();
   removed_dofs.clear();
@@ -187,7 +188,7 @@ void Parth::computeOldToNewDOFMap() {
   }
 }
 
-void Parth::computePermutation(std::vector<int> &perm, int dim) {
+void ParthAPI::computePermutation(std::vector<int> &perm, int dim) {
   if (verbose) {
     std::cout << "+++ PARTH: Permutation Computation +++" << std::endl;
   }
@@ -281,7 +282,7 @@ void Parth::computePermutation(std::vector<int> &perm, int dim) {
 /// mapMeshPermToMatrixPerm - Map the mesh permutation to matrix permutation ->
 /// Final stage of assembler
 ///--------------------------------------------------------------------------
-void Parth::mapMeshPermToMatrixPerm(std::vector<int> &mesh_perm,
+void ParthAPI::mapMeshPermToMatrixPerm(std::vector<int> &mesh_perm,
                                     std::vector<int> &matrix_perm, int dim) {
 #ifndef NDEBUG // TODO: DELETE this
   std::vector<bool> mesh_perm_flag(M_n, false);
@@ -335,18 +336,18 @@ void Parth::mapMeshPermToMatrixPerm(std::vector<int> &mesh_perm,
 #endif
 }
 
-double Parth::getReuse() { return integrator.reuse_ratio; }
+double ParthAPI::getReuse() { return integrator.reuse_ratio; }
 
-int Parth::getNumChanges() { return changed_dof_edges.size(); }
+int ParthAPI::getNumChanges() { return changed_dof_edges.size(); }
 
-void Parth::resetTimers() {
+void ParthAPI::resetTimers() {
   init_time = 0.0;
   map_mesh_to_matrix_computation_time = 0.0;
   dof_change_integrator_time = 0.0;
   change_computation_time = 0.0;
   compute_permutation_time = 0.0;
 }
-void Parth::printTiming() {
+void ParthAPI::printTiming() {
   std::cout << "+++ PARTH: Timing START +++" << std::endl;
   std::cout << "+++ PARTH: Init Time: " << init_time << " sec" << std::endl;
   std::cout << "+++ PARTH: DOF Change Integration Time: "
@@ -362,7 +363,7 @@ void Parth::printTiming() {
 }
 
 
-void Parth::computeMeshFromMatrix(int* Ap, int* Ai, int N, int dim) {  
+void ParthAPI::computeMeshFromMatrix(int* Ap, int* Ai, int N, int dim) {
   assert(N % dim == 0);
   this->Mp_vec.clear();
   this->Mp_vec.resize(N / dim + 1, 0);
@@ -381,8 +382,8 @@ void Parth::computeMeshFromMatrix(int* Ap, int* Ai, int N, int dim) {
   }
 
   //Remove duplicates
-  std::sort(coefficients.begin(), coefficients.end());
-  coefficients.erase(std::unique(coefficients.begin(), coefficients.end()), coefficients.end());
+  std::ranges::sort(coefficients);
+  coefficients.erase(std::ranges::unique(coefficients).begin(), coefficients.end());
 
   for (int i = 0; i < coefficients.size(); i++) {
     this->Mp_vec[std::get<0>(coefficients[i]) + 1]++;
@@ -402,7 +403,7 @@ void Parth::computeMeshFromMatrix(int* Ap, int* Ai, int N, int dim) {
 
   #ifndef NDEBUG
   //Make sure that each row is sorted
-  for(int r = 0; r < this->Mp_vec.size(); r++) {
+  for(int r = 0; r < this->Mp_vec.size() - 1; r++) {
     for (int i = this->Mp_vec[r]; i < this->Mp_vec[r + 1] - 1; i++) {
       assert(this->Mi_vec[i] < this->Mi_vec[i + 1]);
     }

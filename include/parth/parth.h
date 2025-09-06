@@ -22,8 +22,7 @@
 
 // Include the actual implementation headers
 // The CMake build system will set up include paths so these resolve correctly
-#include "Parth.h"         // Implementation class
-#include "ParthTypes.h"    // Enum definitions
+#include "ParthAPI.h"        // Implementation class
 
 // All types and classes are already in the PARTH namespace from the implementation
 // No need to re-export anything - just include and use directly

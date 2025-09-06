@@ -55,7 +55,7 @@ add_library(Parth::parth ALIAS parth)
 # Set target properties for proper library export
 set_target_properties(parth PROPERTIES
     VERSION 1.0.0
-    SOVERSION 1
+    SO_VERSION 1
     CXX_STANDARD 20
     CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON
@@ -159,7 +159,7 @@ if (OPENMP_FOUND)
 endif ()
 
 if (APPLE)
-    set(OMP_BREW /usr/local/Cellar/libomp/18.1.4/)
+    set(OMP_BREW /opt/homebrew/Cellar/libomp/21.1.0/)
     target_include_directories(parth PUBLIC ${OMP_BREW}/include)
     find_library(OMP NAMES omp HINTS ${OMP_BREW}/lib)
     if (OMP)

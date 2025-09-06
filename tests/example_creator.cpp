@@ -8,6 +8,8 @@
 #include <igl/cotmatrix.h>
 #include <parth/parth.h>
 
+#include "HMD.h"
+
 
 struct CLIArgs {
     std::string input_mesh;
@@ -31,14 +33,34 @@ struct CLIArgs {
 //Add edges in specific places
 void addEdges(Eigen::SparseMatrix<double> &L, std::vector<std::pair<int, int>> &edges) {
     for (int i = 0; i < edges.size(); i++) {
-        L.coeffRef(edges[i].first, edges[i].second) = 1;
-        L.coeffRef(edges[i].second, edges[i].first) = 1;
+        int row = edges[i].first;
+        int col = edges[i].second;
+        
+        // Check if the edge already exists
+        bool edge_exists = false;
+        for (Eigen::SparseMatrix<double>::InnerIterator it(L, row); it; ++it) {
+            if (it.col() == col) {
+                edge_exists = true;
+                break;
+            }
+        }
+        
+        // Only add the edge if it doesn't already exist
+        if (!edge_exists) {
+            int num_edges = L.outerIndexPtr()[col + 1] - L.outerIndexPtr()[col];
+            
+            L.coeffRef(row, col) = 1;
+            L.makeCompressed();
+            
+            int new_num_edges = L.outerIndexPtr()[col + 1] - L.outerIndexPtr()[col];
+            assert(new_num_edges == num_edges + 1);
+        }
     }
 }
 
 void convertHmdEdgesToMatrixEdges(std::vector<std::pair<int, int>> &hmd_edges,
     std::vector<std::pair<int, int>> &matrix_edges,
-    PARTH::Parth &parth, int num_edges) {
+    PARTH::ParthAPI &parth, int num_edges) {
         
     for (int i = 0; i < hmd_edges.size(); i++) {
         std::vector<int>& first_region_dofs = parth.hmd.HMD_tree[hmd_edges[i].first].DOFs;
@@ -91,17 +113,20 @@ int main(int argc, char *argv[]) {
     V = OV;
     F = OF;
     std::vector<std::vector<std::pair<int, int>>> test_hmd_edges;
-    //Test case 0 -> full reuse
+    //Test case 0 -> No reuse
+    test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(2, 31)}));
+    //Test case 1 -> full reuse
     test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(0, 1),
         std::pair<int, int>(0, 5), std::pair<int, int>(4, 9), std::pair<int, int>(4, 10)}));
-    //Test case 1 -> level 1 reuse
-    test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(2, 3)}));
-    //Test case 2 -> level 2 reuse
-    test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(3, 7)}));
-    //Test case 3 -> level 3 reuse
-    test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(5, 11)}));
-    //Test case 4 -> No reuse
-    test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(15, 19)}));
+    // test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(0, 1)}));
+    // std::pair<int, int>(0, 5), std::pair<int, int>(4, 9), std::pair<int, int>(4, 10)}));
+    //Test case 2 -> level 1 reuse
+    test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(3, 4)}));
+    //Test case 3 -> level 2 reuse
+    test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(7, 8)}));
+    //Test case 4 -> level 3 reuse
+    test_hmd_edges.push_back(std::vector<std::pair<int, int>>({std::pair<int, int>(15, 16)}));
+
 
     //Create laplacian matrix
     Eigen::SparseMatrix<double> OL, L;
@@ -114,10 +139,10 @@ int main(int argc, char *argv[]) {
         std::vector<std::pair<int, int>> hmd_edges = test_hmd_edges[test_num];
         std::vector<std::pair<int, int>> matrix_edges;
         std::vector<int> perm;
-        int num_edges = 3;
+        int num_edges = 1;
 
         //init Parth
-        PARTH::Parth parth;
+        PARTH::ParthAPI parth;
         parth.setMatrix(OL.rows(), OL.outerIndexPtr(), OL.innerIndexPtr(), 1);
         parth.computePermutation(perm);
         //Add edges
