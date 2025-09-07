@@ -1,90 +1,85 @@
 # Parth: Fill-Reducing Orderings for Sparse Cholesky Factorization
 
-Parth is a C++ library that provides fill-reducing orderings for sparse Cholesky factorizations when sparsity pattern is dynamic. It can be used with state-of-the-art solvers such as MKL, Accelerate, and CHOLMOD to improve the efficiency of sparse matrix factorizations by minimizing fill-in during the decomposition process.
+Parth accelerates sparse Cholesky factorizations by providing fill-reducing orderings that **reuse computations** when sparsity patterns change dynamically. Works with MKL, Accelerate, CHOLMOD, and other state-of-the-art solvers.
 
-## Key Features
-
-- **Fill-reducing orderings**: Minimize fill-in during Cholesky factorization
-- **Dynamic mesh support**: Efficiently handle changing mesh topologies
-- **Multiple backends**: Works with METIS, AMD, and other ordering algorithms
-- **Modern C++ API**: Clean, easy-to-use interface
-- **CMake integration**: Easy integration into existing projects
-- **Cross-platform**: Supports Linux, macOS, and Windows
-
-## Quick Start
-
-### Installation
-
-#### Option 1: Using CMake FetchContent (Recommended)
-
-Add this to your `CMakeLists.txt`:
-
-```cmake
-include(FetchContent)
-
-FetchContent_Declare(
-    parth
-    GIT_REPOSITORY https://github.com/BehroozZare/parth.git
-    GIT_TAG        main
-)
-
-FetchContent_MakeAvailable(parth)
-
-# Link with your target
-target_link_libraries(your_target PRIVATE Parth::parth)
-```
-
-#### Option 2: Manual Build and Install
-
-```bash
-git clone https://github.com/BehroozZare/parth.git
-cd parth
-mkdir build && cd build
-cmake ..
-make -j
-sudo make install
-```
-
-Then in your project:
-```cmake
-find_package(parth REQUIRED)
-target_link_libraries(your_target PRIVATE Parth::parth)
-```
-
-### Basic Usage
+## ⚡ 30-Second Example
 
 ```cpp
 #include <parth/parth.h>
 
-// Create Parth instance
 PARTH::ParthAPI parth;
-parth.setReorderingType(PARTH::METIS);
-
-// Set your mesh connectivity (CSR format)
-parth.setMesh(n, Mp, Mi);
-
-// Compute permutation
+parth.setMatrix(n, column_ptrs, row_indices, 1);  // Set your sparse matrix
 std::vector<int> perm;
-parth.computePermutation(perm, 3); // 3 DOFs per node for 3D problems
+parth.computePermutation(perm);  // Get fill-reducing permutation
+// Use perm with your favorite sparse solver (MKL, CHOLMOD, etc.)
+```
+
+**Expected output**: Permutation vector 
+
+## 🚀 Three Ways to Get Started
+
+### 1. 📚 Learn the Basics
+**See it in action first**: [`examples/api_demos/quick_start.cpp`](examples/api_demos/quick_start.cpp)
+- Complete working example showing computational reuse
+- Shows the core Parth workflow step-by-step
+
+### 2. 🔧 Integrate with Your Solver  
+**Ready-to-use solver integrations**: [`examples/cholesky_integration/`](examples/cholesky_integration/)
+- **MKL**: [`mkl.cpp`](examples/cholesky_integration/mkl.cpp) - Intel MKL PARDISO integration
+- **Accelerate**: [`accelerate.cpp`](examples/cholesky_integration/accelerate.cpp) - Apple Accelerate framework  
+- **CHOLMOD**: [`cholmod.cpp`](examples/cholesky_integration/cholmod.cpp) - SuiteSparse CHOLMOD
+
+### 3. 🚀 Quick CMake Integration
+**Copy-paste project setup**: [`integration_example/`](integration_example/)
+- Complete CMake project template
+- Automatic dependency fetching with FetchContent
+- One-command build: `./scripts/build_with_parth.sh`
+
+---
+
+## Installation
+
+Add to your `CMakeLists.txt`:
+
+```cmake
+include(FetchContent)
+FetchContent_Declare(parth
+    GIT_REPOSITORY https://github.com/BehroozZare/parth.git
+    GIT_TAG main)
+FetchContent_MakeAvailable(parth)
+target_link_libraries(your_target PRIVATE Parth::parth)
+```
+
+## Basic Usage
+
+```cpp
+#include <parth/parth.h>
+
+PARTH::ParthAPI parth;
+parth.setMatrix(n, column_ptrs, row_indices, 1);  // CSR/CSC sparse matrix
+std::vector<int> perm;
+parth.computePermutation(perm);  // Get permutation
 
 // Use permutation with your favorite sparse solver...
 ```
 
-### API Examples
+## ✅ Verify Installation
 
-Check out the [examples/api_demos/](examples/api_demos/) directory for complete examples:
+Test that everything works:
 
-- **quick_start.cpp**: Shows basic permutation computation
-- **intermediate_start.cpp**: Demonstrates more advanced usage patterns
-- **custom_ordering.cpp**: Shows how to use different ordering algorithms
-- **custom_separator.cpp**: Demonstrates custom separator options
-- **graph_node_change.cpp**: Shows handling of dynamic graph changes
+```bash
+# Clone and test the integration example
+git clone https://github.com/BehroozZare/parth.git
+cd parth/integration_example
+./scripts/build_with_parth.sh && cd build && ./use_parth
+```
 
-Additionally, see [examples/cholesky_integration/](examples/cholesky_integration/) for integration with different solvers:
-
-- **accelerate.cpp**: Integration with Apple's Accelerate framework
-- **cholmod.cpp**: Integration with CHOLMOD solver
-- **mkl.cpp**: Integration with Intel MKL
+**Expected output**: 
+```
+Computing permutation (from scratch)...
+Computing permutation (with reuse from previous computation)...
+Modified matrix permutation computed successfully.
+```
 
 ## API Reference
 
@@ -124,9 +119,8 @@ Additionally, see [examples/cholesky_integration/](examples/cholesky_integration
 - **METIS** (required for the core functionality)
 
 ### Optional
-- **Intel MKL** (for high-performance solvers)
-- **CHOLMOD** (for CHOLMOD solver backend)
-- **OpenMP** (for parallel processing)
+- **Intel MKL** (for high-performance sparse solvers for intel processors)
+- **Apple Accelerate** (for high-performance sparse solvers in Apple silicon)
 
 ### Build Options
 
@@ -153,9 +147,8 @@ Available options:
 ## Performance Tips
 
 1. **Enable METIS**: Provides the best ordering quality for most problems
-2. **Set appropriate ND levels**: Typically 4-8 levels work well
-3. **Use factor reuse**: For dynamic meshes, provide DOF mapping to reuse previous factorizations
-4. **Match problem dimension**: Set the correct DOF count per node (1 for scalar, 3 for 3D, etc.)
+2. **Use factor reuse**: For dynamic meshes (meshes with change in number DOFs), provide DOF mapping to reuse previous factorizations
+3. **Match problem dimension**: Set the correct DOF count per node (1 for scalar, 3 for 3D, etc.)
 
 ## Research Benchmarks
 
@@ -169,7 +162,7 @@ To reproduce the benchmarks from the Parth paper:
 
 - **macOS**: Use Accelerate framework integration (recommended)
 - **Linux**: All solvers (CHOLMOD, MKL, etc.) are supported
-- **Docker**: Use the setup from the IPC benchmark repository for reproducible builds
+- **Docker**: Use the setup from [this repository](https://github.com/BehroozZare/parth-ipc-benchmark-generator.git) for reproducible builds
 
 ---
 
