@@ -7,6 +7,7 @@
 #include <cmath>
 #include <iostream>
 #include <metis.h>
+#include <omp.h>
 #include <queue>
 
 namespace PARTH {
@@ -148,8 +149,10 @@ bool HMD::Decompose(
 
     // Assign the permuted labels
     std::vector<int> perm(M_n);
+    double start_perm_time = omp_get_wtime();
     Permute(M_n, Mp, Mi, perm.data(), nullptr);
-    cur_node.setPermutedNewLabel(perm);
+    double end_perm_time = omp_get_wtime();
+    cur_node.setPermutedNewLabel(perm, end_perm_time - start_perm_time);
     return true;
   }
 
@@ -246,8 +249,10 @@ bool HMD::Decompose(
 
           // Assign the permuted labels to the sep nodes
           std::vector<int> perm(M_n);
+          double start_perm_time = omp_get_wtime();
           Permute(M_n, Mp, Mi, perm.data(), nullptr);
-          current_node.setPermutedNewLabel(perm);
+          double end_perm_time = omp_get_wtime();
+          current_node.setPermutedNewLabel(perm, end_perm_time - start_perm_time);
           continue;
         }
 
@@ -259,10 +264,11 @@ bool HMD::Decompose(
         int ret = METIS_ComputeVertexSeparator(&nVertices, Mp, Mi,
                                                vweight.data(), NULL, &csp,
                                                local_nodes_regions.data());
-
+        double start_sep_time = omp_get_wtime();
         if (ret != METIS_OK) {
           std::cerr << "Something went wrong" << std::endl;
         }
+        double end_sep_time = omp_get_wtime();
 
         auto &left_region = sub_mesh_stack[tree_node_ids_set_inv[id * 2 + 1]];
         auto &right_region = sub_mesh_stack[tree_node_ids_set_inv[id * 2 + 2]];
@@ -295,9 +301,12 @@ bool HMD::Decompose(
 
         // Assign the permuted labels to the sep nodes
         sep_region.perm.resize(sep_region.M_n);
+        double start_perm_time, end_perm_time;
         if (sep_region.M_n != 0) {
+          start_perm_time = omp_get_wtime();
           Permute(sep_region.M_n, sep_region.Mp.data(), sep_region.Mi.data(),
                   sep_region.perm.data(), nullptr);
+          end_perm_time = omp_get_wtime();
         }
 
         if (left_region.M_n == 0 && right_region.M_n == 0) {
@@ -322,8 +331,9 @@ bool HMD::Decompose(
                                      current_level, current_node.DOFs.size());
         }
 
+        current_node.separator_comp_time = end_sep_time - start_sep_time;
         current_node.setInitFlag();
-        current_node.setPermutedNewLabel(sep_region.perm);
+        current_node.setPermutedNewLabel(sep_region.perm, end_perm_time - start_perm_time);
 
         // assign the regions to the global node regions
         for (auto &sep_node : sep_assigned) {

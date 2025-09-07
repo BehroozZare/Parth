@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <cassert>
 #include <iostream>
+#include <omp.h>
 #include <queue>
 
 namespace PARTH
@@ -879,9 +880,11 @@ namespace PARTH
       HMD_node_cache_flags[hmd_node.node_id] = 0;
       // Assign the permuted labels to the sep nodes
       std::vector<int> perm(region_mesh.M_n);
+      double start_perm_time = omp_get_wtime();
       hmd.Permute(region_mesh.M_n, region_mesh.Mp.data(), region_mesh.Mi.data(),
                   perm.data(), nullptr);
-      hmd_node.setPermutedNewLabel(perm);
+      double end_perm_time = omp_get_wtime();
+      hmd_node.setPermutedNewLabel(perm, end_perm_time - start_perm_time);
 
       // Assign the permutation to the global node
       for (int local_node = 0; local_node < hmd_node.DOFs.size(); local_node++) {
