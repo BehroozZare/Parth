@@ -260,11 +260,11 @@ bool HMD::Decompose(
         idx_t nVertices = M_n;
         idx_t csp;
         std::vector<int> vweight(nVertices, 1);
-
+        double start_sep_time = omp_get_wtime();
         int ret = METIS_ComputeVertexSeparator(&nVertices, Mp, Mi,
                                                vweight.data(), NULL, &csp,
                                                local_nodes_regions.data());
-        double start_sep_time = omp_get_wtime();
+
         if (ret != METIS_OK) {
           std::cerr << "Something went wrong" << std::endl;
         }

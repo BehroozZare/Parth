@@ -14,6 +14,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
 ################################################################################
 # Test options
 option(${PROJECT_NAME}_WITH_TESTS "Add tests" ON)
+option(${PROJECT_NAME}_WITH_DEV "ADD DEV CODE BASE" ON)
 
 #Add solvers wrapper
 option(${PROJECT_NAME}_WITH_SOLVER_WRAPPER "Add solver wrapper" OFF)
@@ -177,6 +178,10 @@ if (${PROJECT_NAME}_WITH_TESTS)
     add_subdirectory(tests)
 endif ()
 
+if (${PROJECT_NAME}_WITH_DEV)
+    add_subdirectory(dev)
+endif ()
+
 # ################################################################################
 # # examples
 # ################################################################################
@@ -203,6 +208,8 @@ endif ()
 if (${PROJECT_NAME}_WITH_REMESHING_DEMO)
     add_subdirectory(examples/api_demos/remeshing_computation)
 endif ()
+
+
 
 # ################################################################################
 # # Install targets and configuration
