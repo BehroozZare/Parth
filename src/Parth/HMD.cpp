@@ -75,7 +75,8 @@ void HMD::AMDNodeNDPermutation(int M_n, int *Mp, int *Mi, int *perm,
   amd_order(N, Mp, Mi, perm, nullptr, nullptr);
 }
 
-void HMD::Permute(int M_n, int *Mp, int *Mi, int *perm, int *Iperm) {
+double HMD::Permute(int M_n, int *Mp, int *Mi, int *perm, int *Iperm) {
+  double start_perm_time = omp_get_wtime();
   if (this->reorder_type == PARTH::ReorderingType::METIS) {
     metisNodeNDPermutation(M_n, Mp, Mi, perm, Iperm);
   } else if (this->reorder_type == PARTH::ReorderingType::AMD) {
@@ -85,6 +86,8 @@ void HMD::Permute(int M_n, int *Mp, int *Mi, int *perm, int *Iperm) {
   } else {
     std::cerr << "Reordering type is not defined" << std::endl;
   }
+  double end_perm_time = omp_get_wtime();
+  return end_perm_time - start_perm_time;
 }
 
 void HMD::initHMD(
@@ -149,10 +152,9 @@ bool HMD::Decompose(
 
     // Assign the permuted labels
     std::vector<int> perm(M_n);
-    double start_perm_time = omp_get_wtime();
-    Permute(M_n, Mp, Mi, perm.data(), nullptr);
-    double end_perm_time = omp_get_wtime();
-    cur_node.setPermutedNewLabel(perm, end_perm_time - start_perm_time);
+    double perm_time = Permute(M_n, Mp, Mi, perm.data(), nullptr);
+    assert(perm_time < 0);
+    cur_node.setPermutedNewLabel(perm, perm_time);
     return true;
   }
 
@@ -249,10 +251,9 @@ bool HMD::Decompose(
 
           // Assign the permuted labels to the sep nodes
           std::vector<int> perm(M_n);
-          double start_perm_time = omp_get_wtime();
-          Permute(M_n, Mp, Mi, perm.data(), nullptr);
-          double end_perm_time = omp_get_wtime();
-          current_node.setPermutedNewLabel(perm, end_perm_time - start_perm_time);
+          double perm_time = Permute(M_n, Mp, Mi, perm.data(), nullptr);
+          assert(perm_time > 0);
+          current_node.setPermutedNewLabel(perm, perm_time);
           continue;
         }
 
@@ -301,12 +302,10 @@ bool HMD::Decompose(
 
         // Assign the permuted labels to the sep nodes
         sep_region.perm.resize(sep_region.M_n);
-        double start_perm_time, end_perm_time;
+        double perm_time = 0;
         if (sep_region.M_n != 0) {
-          start_perm_time = omp_get_wtime();
-          Permute(sep_region.M_n, sep_region.Mp.data(), sep_region.Mi.data(),
+          perm_time = Permute(sep_region.M_n, sep_region.Mp.data(), sep_region.Mi.data(),
                   sep_region.perm.data(), nullptr);
-          end_perm_time = omp_get_wtime();
         }
 
         if (left_region.M_n == 0 && right_region.M_n == 0) {
@@ -333,7 +332,8 @@ bool HMD::Decompose(
 
         current_node.separator_comp_time = end_sep_time - start_sep_time;
         current_node.setInitFlag();
-        current_node.setPermutedNewLabel(sep_region.perm, end_perm_time - start_perm_time);
+        assert(perm_time >= 0);
+        current_node.setPermutedNewLabel(sep_region.perm, perm_time);
 
         // assign the regions to the global node regions
         for (auto &sep_node : sep_assigned) {

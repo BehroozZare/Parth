@@ -17,18 +17,15 @@ option(${PROJECT_NAME}_WITH_TESTS "Add tests" ON)
 option(${PROJECT_NAME}_WITH_DEV "ADD DEV CODE BASE" ON)
 
 #Add solvers wrapper
-option(${PROJECT_NAME}_WITH_SOLVER_WRAPPER "Add solver wrapper" OFF)
+option(${PROJECT_NAME}_WITH_SOLVER_WRAPPER "Add solver wrapper" ON)
 
 
 #Examples options
 option(${PROJECT_NAME}_WITH_API_DEMO "Add permutation demo" ON)
-option(${PROJECT_NAME}_WITH_CHOLMOD_DEMO "Add cholmod demo" OFF)
 option(${PROJECT_NAME}_WITH_ACCELERATE_DEMO "Add accelerate demo" OFF)
 option(${PROJECT_NAME}_WITH_MKL_DEMO "Add mkl demo" OFF)
 option(${PROJECT_NAME}_WITH_IPC_DEMO "Add strumpack demo" OFF)
 option(${PROJECT_NAME}_WITH_REMESHING_DEMO "Add remeshing demo" OFF)
-option(${PROJECT_NAME}_WITH_SOLVER_WRAPPER_DEMO "Add solver wrapper demo" OFF)
-
 
 if (APPLE)
     set(${PROJECT_NAME}_WITH_MKL OFF)
@@ -124,6 +121,26 @@ set(SUITESPARSE_LIBRARY_DIR_HINTS $ENV{SUITESPARSE_LIB})
 find_package(SuiteSparse REQUIRED)
 target_link_libraries(parth PUBLIC ${SUITESPARSE_LIBRARIES})
 target_include_directories(parth PUBLIC ${SUITESPARSE_INCLUDE_DIRS})
+
+# Add solver wrapper support
+if (${PROJECT_NAME}_WITH_SOLVER_WRAPPER)
+    #Add Eigen to parth
+    include(eigen)
+    #Add src/LinSysSolver to include and source
+    file(GLOB LINSYSSOLVER_SRCFILES
+        "src/LinSysSolver/*.cpp"
+    )
+    target_sources(parth PRIVATE ${LINSYSSOLVER_SRCFILES})
+    target_include_directories(parth PUBLIC 
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/LinSysSolver>
+        $<INSTALL_INTERFACE:include/parth>
+    )
+    target_link_libraries(parth PUBLIC Eigen3::Eigen)
+    target_compile_definitions(parth PUBLIC PARTH_WITH_CHOLMOD)
+    target_compile_definitions(parth PUBLIC PARTH_WITH_SOLVER_WRAPPER)
+endif ()
+
+
 
 # Find Accelerate Framework
 if (APPLE)

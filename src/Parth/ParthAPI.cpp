@@ -188,7 +188,7 @@ void ParthAPI::computeOldToNewDOFMap() {
   }
 }
 
-void ParthAPI::computePermutation(std::vector<int> &perm, int dim) {
+void ParthAPI::computePermutation(std::vector<int> &perm) {
   if (verbose) {
     std::cout << "+++ PARTH: Permutation Computation +++" << std::endl;
   }
@@ -204,14 +204,12 @@ void ParthAPI::computePermutation(std::vector<int> &perm, int dim) {
   this->integrator.reuse_ratio = 0;
   this->changed_dof_edges.clear();
 
-  sim_dim = dim;
-
   hmd.verbose = getVerbose();
   if (M_n != M_n_prev && new_to_old_map.empty()) {
     hmd.HMD_init = false;
   }
 
-  perm.resize(M_n * dim);
+  perm.resize(M_n * sim_dim);
 
   // Initialize the HMD tree
   if (!hmd.HMD_init) {
@@ -219,7 +217,7 @@ void ParthAPI::computePermutation(std::vector<int> &perm, int dim) {
     hmd.initHMD(getNDLevels(), M_n, Mp, Mi, mesh_perm);
     init_time = omp_get_wtime() - init_time;
     map_mesh_to_matrix_computation_time = omp_get_wtime();
-    mapMeshPermToMatrixPerm(mesh_perm, perm, dim);
+    mapMeshPermToMatrixPerm(mesh_perm, perm, sim_dim);
     map_mesh_to_matrix_computation_time =
         omp_get_wtime() - map_mesh_to_matrix_computation_time;
     integrator.reuse_ratio = 0;
@@ -256,13 +254,13 @@ void ParthAPI::computePermutation(std::vector<int> &perm, int dim) {
     assert(mesh_perm.size() == M_n);
     compute_permutation_time = omp_get_wtime();
     if (changed_dof_edges.empty()) {
-      mapMeshPermToMatrixPerm(mesh_perm, perm, dim);
+      mapMeshPermToMatrixPerm(mesh_perm, perm, sim_dim);
       integrator.reuse_ratio = 1;
     } else {
       // call Integrator routine
       integrator.getGlobalPerm(hmd, M_n, Mp, Mi, changed_dof_edges,
                                activate_aggressive_reuse, lagging, mesh_perm);
-      mapMeshPermToMatrixPerm(mesh_perm, perm, dim);
+      mapMeshPermToMatrixPerm(mesh_perm, perm, sim_dim);
     }
     compute_permutation_time = omp_get_wtime() - compute_permutation_time;
   }

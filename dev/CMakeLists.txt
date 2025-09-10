@@ -14,11 +14,15 @@ add_library(parth_dev_utils
     utils/vertex_colored_mesh.h
     utils/polyscope_utils.cpp
     utils/polyscope_utils.h
+    utils/get_factor_nnz.cpp
+    utils/get_factor_nnz.h
 )
 
 target_include_directories(parth_dev_utils PUBLIC utils)
 target_link_libraries(parth_dev_utils PUBLIC Eigen3::Eigen)
 target_link_libraries(parth_dev_utils PUBLIC polyscope::polyscope)
+target_link_libraries(parth_dev_utils PUBLIC ${SUITESPARSE_LIBRARIES})
+target_include_directories(parth_dev_utils PUBLIC ${SUITESPARSE_INCLUDE_DIRS})
 
 
 

@@ -5,8 +5,6 @@
 
 #include "LinSysSolver.hpp"
 
-#include "Parth.h"
-
 #include <Accelerate/Accelerate.h>
 #include "cholmod.h"
 

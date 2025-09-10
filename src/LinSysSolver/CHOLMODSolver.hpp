@@ -5,8 +5,6 @@
 
 #include "LinSysSolver.hpp"
 
-#include "Parth.h"
-
 #include <cholmod.h>
 #include "cholmod.h"
 

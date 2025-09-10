@@ -44,11 +44,12 @@ namespace PARTH_SOLVER {
         assert(p[A_N] == NNZ);
         this->N = A_N;
         this->NNZ = NNZ;
-
+        assert(A_N % M_N == 0);
+        this->setSimulationDIM(A_N / M_N);
         if (new_to_old_map.empty()) {
-            parth.setMeshPointers(M_N, Mp, Mi);
+            parth.setMesh(M_N, Mp, Mi);
         } else {
-            parth.setMeshPointers(M_N, Mp, Mi, new_to_old_map);
+            parth.setMesh(M_N, Mp, Mi, new_to_old_map);
         }
 
         const Eigen::Index nColumnsStarts = N + 1;

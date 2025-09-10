@@ -23,6 +23,10 @@
 // Include the actual implementation headers
 // The CMake build system will set up include paths so these resolve correctly
 #include "ParthAPI.h"        // Implementation class
+#include "ParthTypes.h"
+#ifdef PARTH_WITH_SOLVER_WRAPPER
+#include "LinSysSolver.hpp"
+#endif
 
 // All types and classes are already in the PARTH namespace from the implementation
 // No need to re-export anything - just include and use directly

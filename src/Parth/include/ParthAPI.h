@@ -132,7 +132,7 @@ public:
 
   /// computePermutation - Compute the permutation of the mesh using Parth
   /// algorithm
-  void computePermutation(std::vector<int> &perm, int dim = 3);
+  void computePermutation(std::vector<int> &perm);
 
   /// mapMeshPermToMatrixPerm - Map the mesh permutation to matrix permutation
   void mapMeshPermToMatrixPerm(std::vector<int> &mesh_perm,

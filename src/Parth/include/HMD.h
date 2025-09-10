@@ -154,8 +154,8 @@ namespace PARTH
                              int* Iperm ///<[in] Inverse permutation arrau
         );
 
-        /// Permute - Permute the mesh
-        void Permute(int M_n, ///<[in] Number of DOFs in the mesh
+        /// Permute - Permute the mesh -> return the runtime
+        double Permute(int M_n, ///<[in] Number of DOFs in the mesh
                      int* Mp, ///<[in] Pointer array of mesh in CSC format
                      int* Mi, ///<[in] Index array of mesh in CSC format
                      int* perm, ///<[out] Permutation array

@@ -6,17 +6,13 @@
 //
 #pragma once
 
-#include "Parth.h"
+#include <ParthAPI.h>
 #include <omp.h>
-#include <Eigen/Eigen>
-#include <Eigen/Sparse>
 #include <csv_utils.h>
-#include <fstream>
-#include <iomanip>
+#include <Eigen/Core>
+#include <Eigen/Sparse>
 #include <iostream>
 #include <map>
-#include <set>
-#include <unordered_map>
 
 namespace PARTH_SOLVER {
 
@@ -24,15 +20,6 @@ enum class LinSysSolverType {
   CHOLMOD,
   ACCELERATE,
   MKL_LIB,
-  BARB,
-  LAZY_BARB,
-  JACOBI_BARB,
-  CG,
-  PARALLEL_CHOLMOD,
-  PARALLEL_LAZY_CHOLMOD,
-  SYMPILER,
-  EIGEN,
-  PURE_METIS
 };
 
 enum class ReorderingType {
@@ -52,7 +39,7 @@ public:
   double total_solve_time = 0;
   double total_analyze_time = 0;
 
-  PARTH::Parth parth;
+  PARTH::ParthAPI parth;
   bool activate_parth = true;
   int dim = 1;
   int lag_cnt = 0;
@@ -102,7 +89,7 @@ public:
 
           if (!no_perm || perm.size() != N) {
             parth_time = omp_get_wtime();
-            parth.computePermutation(perm, dim);
+            parth.computePermutation(perm);
             parth_time = omp_get_wtime() - parth_time;
           }
           assert(perm.size() == N);
@@ -165,9 +152,9 @@ public:
   virtual void setParthActivation(bool activate) {
     activate_parth = activate;
     if (activate_parth) {
-      std::cout << "Activating Immobilizer" << std::endl;
+      std::cout << "Activating PARTH" << std::endl;
     } else {
-      std::cout << "Deactivating Immobilizer" << std::endl;
+      std::cout << "Deactivating PARTH" << std::endl;
     }
   }
 
