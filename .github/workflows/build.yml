@@ -71,7 +71,11 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel
 
-      - name: List build artifacts
-        run: |
-          ls -la build/ || dir build/
+      - name: List build artifacts (Unix)
+        if: runner.os != 'Windows'
+        run: ls -la build/
+
+      - name: List build artifacts (Windows)
+        if: runner.os == 'Windows'
+        run: Get-ChildItem -Path build -Recurse | Select-Object -First 50
 
