@@ -1,0 +1,92 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            cmake_generator: "Unix Makefiles"
+          - os: macos-latest
+            cmake_generator: "Unix Makefiles"
+          - os: windows-latest
+            cmake_generator: "Visual Studio 17 2022"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: ${{ runner.os }}-cmake-${{ hashFiles('CMakeLists.txt', 'cmake/**') }}
+          restore-keys: |
+            ${{ runner.os }}-cmake-
+
+      # Ubuntu dependencies
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libomp-dev \
+            libblas-dev \
+            liblapack-dev
+
+      # macOS dependencies (Accelerate provides BLAS/LAPACK)
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install libomp
+
+      # Windows dependencies via vcpkg
+      - name: Setup vcpkg (Windows)
+        if: runner.os == 'Windows'
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: '01f602195983451bc83e72f4214af2cbc495aa94'
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          vcpkg install openblas:x64-windows lapack-reference:x64-windows
+
+      # Configure CMake
+      - name: Configure CMake (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cmake -B build \
+            -G "${{ matrix.cmake_generator }}" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DPARTH_WITH_TESTS=OFF \
+            -DPARTH_WITH_API_DEMO=ON
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -B build `
+            -G "${{ matrix.cmake_generator }}" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DPARTH_WITH_TESTS=OFF `
+            -DPARTH_WITH_API_DEMO=ON `
+            -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+
+      # Build
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: List build artifacts
+        run: |
+          ls -la build/ || dir build/
+

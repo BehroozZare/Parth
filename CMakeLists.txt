@@ -74,8 +74,11 @@ target_include_directories(parth PUBLIC
 ################################################################################
 # Compiler options
 ################################################################################
-add_compile_options(-Wno-write-strings)
-add_compile_options(-Wunused-result)
+# GCC/Clang-specific warning flags (not supported by MSVC)
+if (NOT MSVC)
+    add_compile_options(-Wno-write-strings)
+    add_compile_options(-Wunused-result)
+endif ()
 
 #find_package(OPENMP)
 
@@ -148,15 +151,26 @@ if (OPENMP_FOUND)
 endif ()
 
 if (APPLE)
-    set(OMP_BREW /opt/homebrew/Cellar/libomp/21.1.0/)
-    target_include_directories(parth PUBLIC ${OMP_BREW}/include)
-    find_library(OMP NAMES omp HINTS ${OMP_BREW}/lib)
-    if (OMP)
-        message(STATUS "Found omp: ${OMP}")
+    # Find OpenMP via Homebrew (works on both ARM64 and x86_64)
+    execute_process(
+        COMMAND brew --prefix libomp
+        OUTPUT_VARIABLE OMP_BREW
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        RESULT_VARIABLE BREW_RESULT
+    )
+    if (BREW_RESULT EQUAL 0 AND EXISTS "${OMP_BREW}")
+        message(STATUS "Found Homebrew libomp at: ${OMP_BREW}")
+        target_include_directories(parth PUBLIC ${OMP_BREW}/include)
+        find_library(OMP NAMES omp HINTS ${OMP_BREW}/lib)
+        if (OMP)
+            message(STATUS "Found omp library: ${OMP}")
+            target_link_libraries(parth PUBLIC ${OMP})
+        else ()
+            message(FATAL_ERROR "omp library not found in ${OMP_BREW}/lib")
+        endif ()
     else ()
-        message(FATAL_ERROR "omp library not found")
+        message(FATAL_ERROR "Homebrew libomp not found. Install with: brew install libomp")
     endif ()
-    target_link_libraries(parth PUBLIC ${OMP})
 endif ()
 
 # ################################################################################
