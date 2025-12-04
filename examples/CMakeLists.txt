@@ -11,10 +11,6 @@ if (${PROJECT_NAME}_WITH_API_DEMO)
     target_link_libraries(${PROJECT_NAME}_quick_start PUBLIC parth)
     target_link_libraries(${PROJECT_NAME}_quick_start PUBLIC CLI11::CLI11)
 
-    add_executable(${PROJECT_NAME}_custom_separator api_demos/custom_separator.cpp)
-    target_link_libraries(${PROJECT_NAME}_custom_separator PUBLIC parth)
-    target_link_libraries(${PROJECT_NAME}_custom_separator PUBLIC CLI11::CLI11)
-
     #include eigen
     include(eigen)
     target_link_libraries(${PROJECT_NAME}_quick_start PUBLIC Eigen3::Eigen)

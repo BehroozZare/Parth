@@ -3,7 +3,7 @@
 //
 
 #include "HMD.h"
-#include <suitesparse/amd.h>
+#include <amd.h>
 #include <cmath>
 #include <iostream>
 #include <metis.h>

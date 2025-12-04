@@ -105,24 +105,13 @@ target_compile_features(parth PUBLIC cxx_std_17)
 ################################################################################
 # Required Libraries
 ################################################################################
-# Find Metis
-find_package(METIS REQUIRED)
-if (EXISTS "${METIS_INCLUDES}")
-    target_link_libraries(parth PUBLIC
-            ${METIS_LIBRARIES}
-    )
-    target_link_libraries(parth PUBLIC ${METIS_LIBRARIES})
-    target_include_directories(parth PUBLIC "${METIS_INCLUDES}")
-else ()
-    message(STATUS "The METIS is not found")
-endif ()
+# METIS: find installed or download and build
+include(metis)
+target_link_libraries(parth PUBLIC metis)
 
-# Find SuiteSparse
-set(SUITESPARSE_INCLUDE_DIR_HINTS $ENV{SUITESPARSE_INC})
-set(SUITESPARSE_LIBRARY_DIR_HINTS $ENV{SUITESPARSE_LIB})
-find_package(SuiteSparse REQUIRED)
-target_link_libraries(parth PUBLIC ${SUITESPARSE_LIBRARIES})
-target_include_directories(parth PUBLIC ${SUITESPARSE_INCLUDE_DIRS})
+# SuiteSparse: find installed or download and build
+include(suitesparse)
+target_link_libraries(parth PUBLIC SuiteSparse::CHOLMOD SuiteSparse::AMD)
 
 # Find Accelerate Framework
 if (APPLE)

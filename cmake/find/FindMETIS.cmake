@@ -11,6 +11,12 @@ find_path(METIS_INCLUDES
         $ENV{METISROOT}
         ${METIS_ROOT}
         ${INCLUDE_INSTALL_DIR}
+        /usr/local
+        /usr
+        /opt/local
+        /opt/homebrew
+        /opt/homebrew/opt/metis
+        /usr/local/opt/metis
         PATH_SUFFIXES
         .
         metis
@@ -51,7 +57,21 @@ else()
 endif()
 
 
-find_library(METIS_LIBRARIES metis PATHS $ENV{METISROOT} ${LIB_INSTALL_DIR} PATH_SUFFIXES lib)
+find_library(METIS_LIBRARIES metis
+        PATHS
+        $ENV{METISROOT}
+        ${METIS_ROOT}
+        ${LIB_INSTALL_DIR}
+        /usr/local
+        /usr
+        /opt/local
+        /opt/homebrew
+        /opt/homebrew/opt/metis
+        /usr/local/opt/metis
+        PATH_SUFFIXES
+        lib
+        lib64
+        )
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(METIS DEFAULT_MSG
