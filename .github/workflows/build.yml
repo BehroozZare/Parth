@@ -39,10 +39,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libomp-dev \
-            libblas-dev \
-            liblapack-dev
+          sudo apt-get install -y libomp-dev
 
       # macOS dependencies (Accelerate provides BLAS/LAPACK)
       - name: Install dependencies (macOS)
@@ -50,17 +47,6 @@ jobs:
         run: |
           brew install libomp
 
-      # Windows dependencies via vcpkg
-      - name: Setup vcpkg (Windows)
-        if: runner.os == 'Windows'
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgGitCommitId: '01f602195983451bc83e72f4214af2cbc495aa94'
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          vcpkg install openblas:x64-windows lapack-reference:x64-windows
 
       # Configure CMake
       - name: Configure CMake (Unix)
@@ -79,8 +65,7 @@ jobs:
             -G "${{ matrix.cmake_generator }}" `
             -DCMAKE_BUILD_TYPE=Release `
             -DPARTH_WITH_TESTS=OFF `
-            -DPARTH_WITH_API_DEMO=ON `
-            -DCMAKE_TOOLCHAIN_FILE="${env:VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            -DPARTH_WITH_API_DEMO=ON
 
       # Build
       - name: Build
