@@ -112,9 +112,9 @@ target_compile_features(parth PUBLIC cxx_std_17)
 include(metis)
 target_link_libraries(parth PUBLIC metis)
 
-# SuiteSparse: find installed or download and build
+# SuiteSparse AMD: find installed or download and build
 include(suitesparse)
-target_link_libraries(parth PUBLIC SuiteSparse::CHOLMOD SuiteSparse::AMD)
+target_link_libraries(parth PUBLIC SuiteSparse::AMD)
 
 # Find Accelerate Framework
 if (APPLE)
