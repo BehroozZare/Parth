@@ -1,5 +1,7 @@
 # Parth: Fill-Reducing Orderings for Sparse Cholesky Factorization
 
+[![Build](https://github.com/BehroozZare/Parth/actions/workflows/build.yml/badge.svg)](https://github.com/BehroozZare/Parth/actions/workflows/build.yml)
+
 Parth accelerates sparse Cholesky factorizations by providing fill-reducing orderings that **reuse computations** when sparsity patterns change dynamically. Works with MKL, Accelerate, CHOLMOD, and other state-of-the-art solvers.
 
 ## ⚡ 30-Second Example
